@@ -1,0 +1,1428 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pulse - Full Stack Social Media Platform</title>
+  <meta name="description" content="A full-stack social media platform with user profiles, posts, comments, likes, and follow system powered by an Express.js backend and React frontend." />
+  <meta property="og:title" content="Pulse - Full Stack Social Media Platform" />
+  <meta property="og:description" content="A full-stack social media platform with user profiles, posts, comments, likes, and follow system powered by an Express.js backend and React frontend." />
+  <meta property="og:type" content="website" />
+  <meta name="twitter:card" content="summary_large_image" />
+
+  <!-- Tailwind CSS CDN for instant, standalone browser rendering without build step -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            linkedin: {
+              blue: '#0a66c2',
+              hover: '#004182',
+              bg: '#f4f2ee',
+              card: '#ffffff',
+              border: '#e0dfdc',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    body {
+      background-color: #f4f2ee;
+      font-family: -apple-system, system-ui, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", "Fira Sans", Ubuntu, Oxygen, Oxygen-Sans, Cantarell, "Droid Sans", "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Lucida Grande", Helvetica, Arial, sans-serif;
+    }
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 6px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: #ccc;
+      border-radius: 4px;
+    }
+    .active-nav-indicator {
+      position: absolute;
+      bottom: -1px;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background-color: #191919;
+    }
+  </style>
+</head>
+<body class="min-h-screen text-zinc-900 antialiased flex flex-col">
+
+  <!-- TOP GLOBAL NAVBAR -->
+  <header class="sticky top-0 z-40 bg-white border-b border-zinc-200 shadow-2xs">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6">
+      <div class="flex items-center justify-between h-14 gap-2 sm:gap-4">
+        
+        <!-- Left: LinkedIn Brand + Search -->
+        <div class="flex items-center gap-2 sm:gap-3 flex-1 max-w-sm sm:max-w-md">
+          <div 
+            onclick="switchTab('home')" 
+            class="cursor-pointer flex items-center justify-center w-8 h-8 sm:w-9 sm:h-9 bg-[#0a66c2] text-white rounded font-bold text-lg sm:text-xl shrink-0 shadow-xs hover:opacity-95 transition-opacity"
+            title="LinkedIn Clone — CodeAlpha Task 2"
+          >
+            in
+          </div>
+
+          <div class="relative flex-1">
+            <span class="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 text-xs">🔍</span>
+            <input
+              type="text"
+              id="searchInput"
+              placeholder="Search jobs, skills, or people..."
+              oninput="handleSearch(this.value)"
+              class="w-full pl-8 pr-3 py-1.5 text-xs sm:text-sm bg-[#edf3f8] border border-transparent rounded-md focus:bg-white focus:border-zinc-300 focus:outline-none transition-all placeholder:text-zinc-500 text-zinc-900"
+            />
+          </div>
+        </div>
+
+        <!-- Center: Navigation Tabs -->
+        <nav class="flex items-center gap-1 sm:gap-3 md:gap-4 text-zinc-500">
+          
+          <!-- Home -->
+          <button 
+            id="nav-home" 
+            onclick="switchTab('home')" 
+            class="flex flex-col items-center justify-center min-w-[48px] sm:min-w-[56px] py-1 text-[11px] font-semibold text-zinc-900 relative"
+          >
+            <span class="text-lg leading-none">🏠</span>
+            <span class="hidden sm:inline mt-0.5">Home</span>
+            <span id="indicator-home" class="active-nav-indicator"></span>
+          </button>
+
+          <!-- My Network -->
+          <button 
+            id="nav-network" 
+            onclick="switchTab('network')" 
+            class="flex flex-col items-center justify-center min-w-[48px] sm:min-w-[56px] py-1 text-[11px] font-normal hover:text-zinc-900 relative transition-colors"
+          >
+            <div class="relative text-lg leading-none">
+              👥
+              <span id="networkBadge" class="absolute -top-1 -right-2 bg-[#0a66c2] text-white text-[9px] font-bold px-1 rounded-full">5</span>
+            </div>
+            <span class="hidden sm:inline mt-0.5">My Network</span>
+            <span id="indicator-network" class="active-nav-indicator hidden"></span>
+          </button>
+
+          <!-- Jobs -->
+          <button 
+            id="nav-jobs" 
+            onclick="switchTab('jobs')" 
+            class="flex flex-col items-center justify-center min-w-[48px] sm:min-w-[56px] py-1 text-[11px] font-normal hover:text-zinc-900 relative transition-colors"
+          >
+            <span class="text-lg leading-none">💼</span>
+            <span class="hidden sm:inline mt-0.5">Jobs</span>
+            <span id="indicator-jobs" class="active-nav-indicator hidden"></span>
+          </button>
+
+          <!-- Notifications -->
+          <button 
+            id="nav-notifications" 
+            onclick="switchTab('notifications')" 
+            class="flex flex-col items-center justify-center min-w-[48px] sm:min-w-[56px] py-1 text-[11px] font-normal hover:text-zinc-900 relative transition-colors"
+          >
+            <div class="relative text-lg leading-none">
+              🔔
+              <span class="absolute -top-1 -right-1.5 bg-rose-600 text-white text-[9px] font-bold px-1 rounded-full">3</span>
+            </div>
+            <span class="hidden sm:inline mt-0.5">Notifications</span>
+            <span id="indicator-notifications" class="active-nav-indicator hidden"></span>
+          </button>
+
+          <!-- Me dropdown -->
+          <div class="relative">
+            <button 
+              onclick="toggleMeMenu()" 
+              class="flex flex-col items-center justify-center min-w-[48px] sm:min-w-[56px] py-1 text-[11px] hover:text-zinc-900"
+            >
+              <img id="navAvatar" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&h=100&q=80" alt="Me" class="w-5 h-5 rounded-full object-cover border border-zinc-300" />
+              <span class="hidden sm:inline mt-0.5">Me ▾</span>
+            </button>
+
+            <!-- Me Menu -->
+            <div id="meMenu" class="hidden absolute right-0 mt-2 w-72 bg-white rounded-xl shadow-xl border border-zinc-200 p-2 z-50 text-xs">
+              <div class="p-3 border-b border-zinc-100 flex items-center gap-3">
+                <img id="meMenuAvatar" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&h=100&q=80" alt="avatar" class="w-12 h-12 rounded-full object-cover border" />
+                <div class="min-w-0 flex-1">
+                  <div id="meMenuName" class="font-bold text-zinc-900 text-sm truncate">Alex Chen</div>
+                  <div id="meMenuHeadline" class="text-zinc-500 line-clamp-1">Senior Full Stack Engineer</div>
+                  <button onclick="openProfileModal(currentUserId); toggleMeMenu();" class="mt-2 w-full py-1 text-center text-[#0a66c2] border border-[#0a66c2] rounded-full font-semibold hover:bg-sky-50">
+                    View Profile
+                  </button>
+                </div>
+              </div>
+
+              <div class="p-2 border-b border-zinc-100">
+                <div class="text-[10px] font-bold text-zinc-400 uppercase tracking-wider px-2 mb-1">
+                  Switch Account (Demo)
+                </div>
+                <div id="accountSwitcherList" class="max-h-36 overflow-y-auto space-y-1"></div>
+              </div>
+
+              <div class="pt-1 space-y-1">
+                <button onclick="openCreateUserModal(); toggleMeMenu();" class="w-full text-left px-2.5 py-1.5 hover:bg-zinc-100 rounded-lg text-zinc-700">
+                  + Create New User Profile
+                </button>
+                <button onclick="resetDemoData(); toggleMeMenu();" class="w-full text-left px-2.5 py-1.5 hover:bg-zinc-100 rounded-lg text-zinc-500">
+                  🔄 Reset Seed Data
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Separator -->
+          <div class="h-6 w-[1px] bg-zinc-200 hidden md:block"></div>
+
+          <!-- Download ZIP Button -->
+          <button 
+            onclick="downloadProjectZip()" 
+            class="flex items-center gap-1.5 px-3 py-1.5 bg-[#0a66c2] hover:bg-[#004182] text-white rounded-full text-xs font-bold shadow-xs transition-colors"
+            title="Download CodeAlpha_Task2_SocialMediaPlatform.zip"
+          >
+            <span>📦</span>
+            <span class="hidden sm:inline">Download ZIP</span>
+          </button>
+
+          <!-- Backend Indicator -->
+          <button 
+            onclick="openApiModal()" 
+            id="backendBadge"
+            class="hidden lg:flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200 rounded-full hover:bg-emerald-100"
+          >
+            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+            <span>REST API :3000</span>
+          </button>
+
+        </nav>
+
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN BODY WRAPPER -->
+  <main class="max-w-7xl mx-auto px-3 sm:px-6 py-4 flex-1 w-full">
+    
+    <!-- Toast Banner Container -->
+    <div id="toast" class="hidden fixed bottom-5 right-5 z-50 bg-zinc-900 text-white px-4 py-2.5 rounded-xl shadow-2xl text-xs font-semibold items-center gap-2 border border-zinc-700"></div>
+
+    <!-- VIEW 1: HOME FEED (3-COLUMN LAYOUT) -->
+    <div id="view-home" class="grid grid-cols-1 md:grid-cols-12 gap-4">
+      
+      <!-- Left Sidebar: Profile Card & Hashtags -->
+      <aside class="md:col-span-3 space-y-2.5">
+        <div class="bg-white rounded-xl border border-zinc-200 overflow-hidden shadow-xs">
+          <div class="h-16 bg-gradient-to-r from-sky-600 via-indigo-600 to-blue-700 relative">
+            <img id="sidebarBanner" src="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=600&q=80" class="w-full h-full object-cover" />
+          </div>
+          <div class="px-4 pb-4 text-center -mt-9 border-b border-zinc-100">
+            <img id="sidebarAvatar" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&h=150&q=80" onclick="openProfileModal(currentUserId)" class="w-16 h-16 rounded-full border-2 border-white object-cover mx-auto shadow-sm cursor-pointer hover:brightness-95" />
+            <h3 id="sidebarName" onclick="openProfileModal(currentUserId)" class="font-bold text-sm text-zinc-900 hover:underline cursor-pointer mt-1.5 leading-snug">Alex Chen</h3>
+            <p id="sidebarHeadline" class="text-[11px] text-zinc-500 line-clamp-2 mt-0.5 leading-tight">Senior Full Stack Engineer @ CodeAlpha</p>
+          </div>
+
+          <div class="py-2 border-b border-zinc-100 text-xs">
+            <div onclick="switchTab('network')" class="px-4 py-1.5 flex justify-between hover:bg-zinc-50 cursor-pointer">
+              <div>
+                <div class="text-[11px] font-semibold text-zinc-500">Connections</div>
+                <div class="text-[10px] text-zinc-400">Grow your network</div>
+              </div>
+              <span id="sidebarConnectionsCount" class="font-bold text-[#0a66c2]">4</span>
+            </div>
+            <div class="px-4 py-1.5 flex justify-between">
+              <div>
+                <div class="text-[11px] font-semibold text-zinc-500">Profile viewers</div>
+                <div class="text-[10px] text-zinc-400">Past 90 days</div>
+              </div>
+              <span id="sidebarViews" class="font-bold text-[#0a66c2]">482</span>
+            </div>
+          </div>
+
+          <div class="p-2 space-y-0.5 text-xs">
+            <button onclick="setFeedFilter('all')" id="btn-feed-all" class="w-full text-left px-3 py-1.5 rounded-lg font-medium bg-sky-50 text-[#0a66c2]">
+              📈 Feed (Top Updates)
+            </button>
+            <button onclick="setFeedFilter('following')" id="btn-feed-following" class="w-full text-left px-3 py-1.5 rounded-lg font-medium text-zinc-600 hover:bg-zinc-50">
+              👥 Following & Network
+            </button>
+            <button onclick="setFeedFilter('bookmarks')" id="btn-feed-bookmarks" class="w-full text-left px-3 py-1.5 rounded-lg font-medium text-zinc-600 hover:bg-zinc-50">
+              🔖 Saved Items
+            </button>
+          </div>
+        </div>
+
+        <!-- Followed Hashtags -->
+        <div class="bg-white rounded-xl border border-zinc-200 p-3 shadow-xs text-xs">
+          <div class="text-[10px] font-bold text-zinc-400 uppercase tracking-wider mb-2">Followed Hashtags</div>
+          <div class="space-y-1">
+            <button onclick="filterByTag('fullstack')" class="w-full text-left px-2 py-1 rounded text-zinc-600 hover:bg-zinc-50 hover:text-[#0a66c2]">#fullstack</button>
+            <button onclick="filterByTag('react')" class="w-full text-left px-2 py-1 rounded text-zinc-600 hover:bg-zinc-50 hover:text-[#0a66c2]">#react</button>
+            <button onclick="filterByTag('express')" class="w-full text-left px-2 py-1 rounded text-zinc-600 hover:bg-zinc-50 hover:text-[#0a66c2]">#express</button>
+            <button onclick="filterByTag('codealpha')" class="w-full text-left px-2 py-1 rounded text-zinc-600 hover:bg-zinc-50 hover:text-[#0a66c2]">#codealpha</button>
+          </div>
+        </div>
+      </aside>
+
+      <!-- Center Main Feed: Start a Post + Posts List -->
+      <main class="md:col-span-6 space-y-3">
+        
+        <!-- Start a Post Card -->
+        <div class="bg-white rounded-xl border border-zinc-200 p-3 sm:p-4 shadow-xs">
+          <div class="flex items-center gap-3 mb-2.5">
+            <img id="startPostAvatar" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&h=100&q=80" class="w-11 h-11 rounded-full object-cover border shrink-0" />
+            <button onclick="openCreatePostModal()" class="flex-1 text-left px-4 py-2.5 bg-[#f3f2ef] hover:bg-[#ebe7df] text-zinc-600 text-xs sm:text-sm font-semibold rounded-full border border-zinc-200 transition-colors">
+              Start a post, try writing with AI or share an update...
+            </button>
+          </div>
+
+          <div class="flex items-center justify-between pt-1 border-t border-zinc-100 flex-wrap text-xs font-semibold text-zinc-600">
+            <button onclick="openCreatePostModal()" class="flex items-center gap-1.5 px-3 py-2 hover:bg-zinc-100 rounded-lg text-[#378fe9]">
+              <span>🖼️</span> <span>Media</span>
+            </button>
+            <button onclick="openCreatePostModal()" class="flex items-center gap-1.5 px-3 py-2 hover:bg-zinc-100 rounded-lg text-[#5f9b41]">
+              <span>🎥</span> <span>Video</span>
+            </button>
+            <button onclick="openCreatePostModal()" class="flex items-center gap-1.5 px-3 py-2 hover:bg-zinc-100 rounded-lg text-[#c37d16]">
+              <span>📅</span> <span>Event</span>
+            </button>
+            <button onclick="openCreatePostModal()" class="flex items-center gap-1.5 px-3 py-2 hover:bg-zinc-100 rounded-lg text-[#e06847]">
+              <span>📰</span> <span>Write article</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Filter bar -->
+        <div class="flex items-center justify-between px-1 text-xs text-zinc-500 font-semibold">
+          <div class="flex items-center gap-2">
+            <span>Sort by: <strong class="text-zinc-800">Top Updates</strong></span>
+            <span id="postCountBadge" class="text-zinc-400 font-normal">(4 posts)</span>
+          </div>
+          <button onclick="loadPosts()" class="hover:text-zinc-800 flex items-center gap-1 font-semibold">
+            <span>🔄 Refresh</span>
+          </button>
+        </div>
+
+        <!-- Posts Container -->
+        <div id="postsContainer" class="space-y-3"></div>
+
+      </main>
+
+      <!-- Right Sidebar: News & ZIP Export -->
+      <aside class="md:col-span-3 space-y-2.5">
+        
+        <!-- ZIP Download Card -->
+        <div class="bg-gradient-to-br from-white to-sky-50 rounded-xl border border-sky-200 p-4 shadow-xs">
+          <div class="flex items-center gap-2 mb-1.5">
+            <span class="text-lg">📦</span>
+            <div>
+              <h4 class="font-bold text-xs text-zinc-900 leading-tight">Export Project ZIP</h4>
+              <span class="text-[10px] text-zinc-500">CodeAlpha Task 2 Deliverable</span>
+            </div>
+          </div>
+          <p class="text-[11px] text-zinc-600 mb-3 leading-relaxed">
+            Download the complete source code bundled and ready for your GitHub repository (<code>CodeAlpha_SocialMediaPlatform</code>).
+          </p>
+          <button onclick="downloadProjectZip()" class="w-full py-2 px-3 bg-[#0a66c2] hover:bg-[#004182] text-white rounded-lg text-xs font-bold transition-colors flex items-center justify-center gap-1.5 shadow-xs">
+            <span>⬇️</span> <span>Download Project ZIP</span>
+          </button>
+        </div>
+
+        <!-- LinkedIn News -->
+        <div class="bg-white rounded-xl border border-zinc-200 p-3.5 shadow-xs">
+          <h4 class="font-bold text-xs text-zinc-900 mb-2.5">LinkedIn News</h4>
+          <div class="space-y-2.5 text-xs">
+            <div class="cursor-pointer group">
+              <div class="font-semibold text-zinc-800 group-hover:text-[#0a66c2] line-clamp-1">• Full Stack Web Dev surges in demand</div>
+              <div class="text-[10px] text-zinc-400 ml-2">3h ago · 12,450 readers</div>
+            </div>
+            <div class="cursor-pointer group">
+              <div class="font-semibold text-zinc-800 group-hover:text-[#0a66c2] line-clamp-1">• Express.js & TypeScript microservices</div>
+              <div class="text-[10px] text-zinc-400 ml-2">5h ago · 8,120 readers</div>
+            </div>
+            <div class="cursor-pointer group">
+              <div class="font-semibold text-zinc-800 group-hover:text-[#0a66c2] line-clamp-1">• CodeAlpha internship project showcase</div>
+              <div class="text-[10px] text-zinc-400 ml-2">1d ago · 19,300 readers</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Add to your feed (Recommendations) -->
+        <div class="bg-white rounded-xl border border-zinc-200 p-3.5 shadow-xs">
+          <h4 class="font-bold text-xs text-zinc-900 mb-2.5">Add to your feed</h4>
+          <div id="suggestedUsersList" class="space-y-3"></div>
+        </div>
+
+      </aside>
+
+    </div>
+
+    <!-- VIEW 2: MY NETWORK -->
+    <div id="view-network" class="hidden max-w-6xl mx-auto space-y-4">
+      <div class="bg-white rounded-xl border border-zinc-200 p-4 shadow-xs flex justify-between items-center flex-wrap gap-2">
+        <div>
+          <h2 class="text-base font-bold text-zinc-900">Manage My Network</h2>
+          <p class="text-xs text-zinc-500">Connect with software engineers, designers, and mentors.</p>
+        </div>
+        <div class="flex gap-4 text-xs">
+          <span class="font-bold text-zinc-900" id="networkTotalConnections">4 Connections</span>
+          <span class="text-zinc-500">·</span>
+          <span class="font-bold text-zinc-900">5 Members in Directory</span>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-xl border border-zinc-200 p-4 shadow-xs">
+        <h3 class="font-bold text-sm text-zinc-900 mb-3 pb-2 border-b">People you may know</h3>
+        <div id="networkGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3"></div>
+      </div>
+    </div>
+
+    <!-- VIEW 3: JOBS -->
+    <div id="view-jobs" class="hidden max-w-4xl mx-auto space-y-4">
+      <div class="bg-white rounded-xl border border-zinc-200 p-4 shadow-xs">
+        <h2 class="text-base font-bold text-zinc-900 mb-1">Recommended Tech Jobs</h2>
+        <p class="text-xs text-zinc-500 mb-3">Full-stack web engineering openings at top tech organizations.</p>
+        <input type="text" id="jobSearchInput" oninput="filterJobs(this.value)" placeholder="Search job title, company, or tech stack..." class="w-full px-3.5 py-2 text-xs bg-zinc-50 border rounded-lg focus:outline-none focus:border-[#0a66c2]" />
+      </div>
+
+      <div id="jobsListContainer" class="bg-white rounded-xl border border-zinc-200 divide-y divide-zinc-100 shadow-xs"></div>
+    </div>
+
+    <!-- VIEW 4: NOTIFICATIONS -->
+    <div id="view-notifications" class="hidden max-w-2xl mx-auto bg-white rounded-xl border border-zinc-200 divide-y divide-zinc-100 shadow-xs">
+      <div class="p-4 bg-zinc-50 font-bold text-sm text-zinc-900 flex justify-between">
+        <span>Notifications & Alerts</span>
+        <span class="text-xs text-zinc-500 font-normal">3 new</span>
+      </div>
+      <div class="p-4 flex gap-3 text-xs hover:bg-zinc-50 cursor-pointer">
+        <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=100&h=100&q=80" class="w-10 h-10 rounded-full object-cover shrink-0" />
+        <div>
+          <p class="text-zinc-800"><strong>Sarah Miller</strong> reacted to your CodeAlpha Task 2 project post: "Excited to share that I have just completed Task 2..."</p>
+          <span class="text-[10px] text-zinc-400 mt-1 block">25 minutes ago</span>
+        </div>
+      </div>
+      <div class="p-4 flex gap-3 text-xs hover:bg-zinc-50 cursor-pointer">
+        <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=100&h=100&q=80" class="w-10 h-10 rounded-full object-cover shrink-0" />
+        <div>
+          <p class="text-zinc-800"><strong>Marcus Vance</strong> commented on your post: "Clean REST endpoints with proper HTTP status codes make frontend integration a breeze."</p>
+          <span class="text-[10px] text-zinc-400 mt-1 block">1 hour ago</span>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- MODALS -->
+
+  <!-- 1. Create Post Modal -->
+  <div id="createPostModal" class="hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3">
+    <div class="bg-white rounded-2xl max-w-xl w-full border border-zinc-200 shadow-2xl overflow-hidden flex flex-col">
+      <div class="p-4 border-b flex justify-between items-center">
+        <h3 class="font-bold text-sm text-zinc-900">Create a post</h3>
+        <button onclick="closeCreatePostModal()" class="text-zinc-400 hover:text-zinc-700 text-lg">✕</button>
+      </div>
+      <div class="p-4 space-y-3">
+        <textarea id="newPostContent" rows="4" placeholder="What do you want to talk about? Share an insight, project milestone, or code tip..." class="w-full text-sm border-0 focus:ring-0 focus:outline-none resize-none leading-relaxed"></textarea>
+        
+        <div>
+          <label class="block text-[11px] font-semibold text-zinc-500 mb-1">Attach Image URL (Optional)</label>
+          <input type="url" id="newPostMedia" placeholder="https://images.unsplash.com/..." class="w-full px-3 py-1.5 text-xs border rounded-lg focus:outline-none focus:border-[#0a66c2]" />
+        </div>
+
+        <div class="flex items-center gap-1.5 text-xs text-zinc-500 flex-wrap">
+          <span>Tags:</span>
+          <button type="button" onclick="appendTag('fullstack')" class="px-2 py-0.5 bg-zinc-100 hover:bg-sky-100 hover:text-[#0a66c2] rounded">#fullstack</button>
+          <button type="button" onclick="appendTag('react')" class="px-2 py-0.5 bg-zinc-100 hover:bg-sky-100 hover:text-[#0a66c2] rounded">#react</button>
+          <button type="button" onclick="appendTag('express')" class="px-2 py-0.5 bg-zinc-100 hover:bg-sky-100 hover:text-[#0a66c2] rounded">#express</button>
+          <button type="button" onclick="appendTag('codealpha')" class="px-2 py-0.5 bg-zinc-100 hover:bg-sky-100 hover:text-[#0a66c2] rounded">#codealpha</button>
+        </div>
+      </div>
+      <div class="p-4 border-t flex justify-end gap-2 bg-zinc-50">
+        <button onclick="closeCreatePostModal()" class="px-4 py-1.5 text-xs font-semibold text-zinc-600 rounded-full hover:bg-zinc-200">Cancel</button>
+        <button onclick="submitNewPost()" class="px-5 py-1.5 bg-[#0a66c2] hover:bg-[#004182] text-white rounded-full text-xs font-bold">Post</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. User Profile Modal -->
+  <div id="profileModal" class="hidden fixed inset-0 z-50 bg-black/65 backdrop-blur-xs flex items-center justify-center p-3 overflow-y-auto">
+    <div class="bg-[#f3f2ef] rounded-2xl max-w-2xl w-full border border-zinc-200 shadow-2xl overflow-hidden my-6 max-h-[90vh] flex flex-col">
+      <div class="p-3 bg-white border-b flex justify-between items-center">
+        <span class="font-bold text-sm text-zinc-900" id="profModalTitle">User Profile</span>
+        <button onclick="closeProfileModal()" class="text-zinc-400 hover:text-zinc-700 text-lg">✕</button>
+      </div>
+      <div class="overflow-y-auto flex-1 p-3 space-y-3">
+        <div class="bg-white rounded-xl border p-4">
+          <div class="h-28 bg-gradient-to-r from-sky-600 to-indigo-600 rounded-lg -mt-4 -mx-4 mb-3 relative overflow-hidden">
+            <img id="profModalBanner" src="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=800&q=80" class="w-full h-full object-cover" />
+          </div>
+          <div class="flex justify-between items-end -mt-14 mb-2">
+            <img id="profModalAvatar" src="" class="w-24 h-24 rounded-full border-4 border-white object-cover shadow bg-white" />
+            <div id="profModalActions"></div>
+          </div>
+          <h2 id="profModalName" class="text-xl font-bold text-zinc-900"></h2>
+          <p id="profModalHeadline" class="text-xs text-zinc-700 mt-0.5 leading-snug"></p>
+          <p id="profModalMeta" class="text-xs text-zinc-400 mt-1"></p>
+        </div>
+
+        <div class="bg-white rounded-xl border p-4">
+          <h3 class="font-bold text-xs text-zinc-900 uppercase tracking-wider mb-2">About</h3>
+          <p id="profModalBio" class="text-xs text-zinc-700 leading-relaxed"></p>
+        </div>
+
+        <div class="bg-white rounded-xl border p-4">
+          <h3 class="font-bold text-xs text-zinc-900 uppercase tracking-wider mb-2">Experience</h3>
+          <div id="profModalExp" class="text-xs space-y-2 text-zinc-700"></div>
+        </div>
+
+        <div class="bg-white rounded-xl border p-4">
+          <h3 class="font-bold text-xs text-zinc-900 uppercase tracking-wider mb-2">Education</h3>
+          <div id="profModalEdu" class="text-xs space-y-1 text-zinc-700"></div>
+        </div>
+
+        <div class="bg-white rounded-xl border p-4">
+          <h3 class="font-bold text-xs text-zinc-900 uppercase tracking-wider mb-2">Skills</h3>
+          <div id="profModalSkills" class="flex flex-wrap gap-1.5"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. Edit Profile Modal -->
+  <div id="editProfileModal" class="hidden fixed inset-0 z-50 bg-black/65 backdrop-blur-xs flex items-center justify-center p-3">
+    <div class="bg-white rounded-2xl max-w-lg w-full border border-zinc-200 shadow-2xl overflow-hidden">
+      <div class="p-4 border-b flex justify-between items-center">
+        <h3 class="font-bold text-sm text-zinc-900">Edit Intro</h3>
+        <button onclick="closeEditProfileModal()" class="text-zinc-400 hover:text-zinc-700 text-lg">✕</button>
+      </div>
+      <div class="p-4 space-y-3 max-h-[75vh] overflow-y-auto text-xs">
+        <div>
+          <label class="block font-semibold text-zinc-700 mb-1">Full Name</label>
+          <input type="text" id="editName" class="w-full px-3 py-1.5 border rounded-lg focus:outline-none focus:border-[#0a66c2]" />
+        </div>
+        <div>
+          <label class="block font-semibold text-zinc-700 mb-1">Headline</label>
+          <input type="text" id="editHeadline" class="w-full px-3 py-1.5 border rounded-lg focus:outline-none focus:border-[#0a66c2]" />
+        </div>
+        <div>
+          <label class="block font-semibold text-zinc-700 mb-1">Company</label>
+          <input type="text" id="editCompany" class="w-full px-3 py-1.5 border rounded-lg focus:outline-none focus:border-[#0a66c2]" />
+        </div>
+        <div>
+          <label class="block font-semibold text-zinc-700 mb-1">Location</label>
+          <input type="text" id="editLocation" class="w-full px-3 py-1.5 border rounded-lg focus:outline-none focus:border-[#0a66c2]" />
+        </div>
+        <div>
+          <label class="block font-semibold text-zinc-700 mb-1">About Summary</label>
+          <textarea id="editBio" rows="3" class="w-full px-3 py-1.5 border rounded-lg focus:outline-none focus:border-[#0a66c2]"></textarea>
+        </div>
+      </div>
+      <div class="p-3 border-t bg-zinc-50 flex justify-end gap-2">
+        <button onclick="closeEditProfileModal()" class="px-4 py-1.5 text-xs font-semibold rounded-full hover:bg-zinc-200">Cancel</button>
+        <button onclick="saveProfileChanges()" class="px-5 py-1.5 bg-[#0a66c2] hover:bg-[#004182] text-white rounded-full text-xs font-bold">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. Create User Modal -->
+  <div id="createUserModal" class="hidden fixed inset-0 z-50 bg-black/65 backdrop-blur-xs flex items-center justify-center p-3">
+    <div class="bg-white rounded-2xl max-w-md w-full border border-zinc-200 shadow-2xl overflow-hidden text-xs">
+      <div class="p-4 border-b flex justify-between items-center">
+        <h3 class="font-bold text-sm text-zinc-900">Create New Account</h3>
+        <button onclick="closeCreateUserModal()" class="text-zinc-400 hover:text-zinc-700 text-lg">✕</button>
+      </div>
+      <div class="p-4 space-y-3">
+        <div>
+          <label class="block font-semibold text-zinc-700 mb-1">Full Name</label>
+          <input type="text" id="newUserName" placeholder="Jordan Lee" class="w-full px-3 py-1.5 border rounded-lg" />
+        </div>
+        <div>
+          <label class="block font-semibold text-zinc-700 mb-1">Username</label>
+          <input type="text" id="newUserHandle" placeholder="jordanlee" class="w-full px-3 py-1.5 border rounded-lg" />
+        </div>
+        <div>
+          <label class="block font-semibold text-zinc-700 mb-1">Headline</label>
+          <input type="text" id="newUserHeadline" placeholder="Full Stack Developer | React, Node.js" class="w-full px-3 py-1.5 border rounded-lg" />
+        </div>
+      </div>
+      <div class="p-3 border-t bg-zinc-50 flex justify-end gap-2">
+        <button onclick="closeCreateUserModal()" class="px-4 py-1.5 rounded-full hover:bg-zinc-200">Cancel</button>
+        <button onclick="submitNewUser()" class="px-5 py-1.5 bg-[#0a66c2] text-white rounded-full font-bold">Create Account</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 5. API Modal -->
+  <div id="apiModal" class="hidden fixed inset-0 z-50 bg-black/65 backdrop-blur-xs flex items-center justify-center p-3">
+    <div class="bg-white rounded-2xl max-w-2xl w-full border shadow-2xl overflow-hidden text-xs">
+      <div class="p-4 border-b flex justify-between items-center">
+        <h3 class="font-bold text-sm text-zinc-900">Express.js REST API Architecture</h3>
+        <button onclick="closeApiModal()" class="text-zinc-400 hover:text-zinc-700 text-lg">✕</button>
+      </div>
+      <div class="p-4 space-y-2 max-h-[70vh] overflow-y-auto">
+        <div class="p-2 bg-emerald-50 text-emerald-800 rounded font-mono">GET /api/health — Status: Online, Port 3000</div>
+        <div class="p-2 bg-zinc-50 rounded font-mono">GET /api/posts — Retrieve feed posts with author & reaction data</div>
+        <div class="p-2 bg-zinc-50 rounded font-mono">POST /api/posts — Create new post</div>
+        <div class="p-2 bg-zinc-50 rounded font-mono">POST /api/posts/:id/react — React with Like, Celebrate, Support, Love, Insightful</div>
+        <div class="p-2 bg-zinc-50 rounded font-mono">POST /api/posts/:id/comments — Add comments</div>
+        <div class="p-2 bg-zinc-50 rounded font-mono">POST /api/users/:id/connect — Toggle 1st degree connection</div>
+        <div class="p-2 bg-zinc-50 rounded font-mono">GET /api/download-zip — Download project archive</div>
+      </div>
+      <div class="p-3 border-t bg-zinc-50 flex justify-end">
+        <button onclick="closeApiModal()" class="px-4 py-1.5 bg-zinc-900 text-white rounded-lg">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- EMBEDDED JAVASCRIPT: FULL CLIENT ENGINE WITH CONNECTED BACKEND -->
+  <script>
+    // Initial Seed Data (Fallback if opened via file:// or server offline)
+    const SEED_USERS = [
+      {
+        id: 'u1',
+        username: 'alexchen',
+        name: 'Alex Chen',
+        headline: 'Senior Full Stack Engineer @ CodeAlpha | React, Node.js, Express & Microservices',
+        avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&h=300&q=80',
+        bannerUrl: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=1200&q=80',
+        bio: 'Passionate full-stack developer building clean web platforms from end to end. Mentoring interns and designing scalable REST APIs.',
+        company: 'CodeAlpha Technologies',
+        education: 'UC Berkeley · Computer Science',
+        location: 'San Francisco Bay Area, CA',
+        website: 'https://alexchen.dev',
+        connectionCount: 4,
+        followerCount: 5,
+        profileViews: 482,
+        postImpressions: 4320,
+        skills: ['React', 'Express.js', 'Node.js', 'TypeScript', 'Tailwind CSS', 'Docker'],
+        experiences: [
+          { title: 'Senior Full Stack Engineer', company: 'CodeAlpha Technologies', period: '2023 - Present', description: 'Architecting end-to-end full stack web platforms and REST API infrastructure.' },
+          { title: 'Software Engineer', company: 'Stripe', period: '2021 - 2023', description: 'Engineered high-reliability checkout workflows and internal web dashboards.' }
+        ],
+        educations: [{ school: 'UC Berkeley', degree: 'B.S. Computer Science', period: '2017 - 2021' }]
+      },
+      {
+        id: 'u2',
+        username: 'sarahm',
+        name: 'Sarah Miller',
+        headline: 'Lead Product Designer & Design Technologist | Design Systems & Accessible Web UI',
+        avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=300&h=300&q=80',
+        bannerUrl: 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?auto=format&fit=crop&w=1200&q=80',
+        bio: 'Design systems fanatic. Bringing typography, whitespace, and micro-interactions together to create intuitive user experiences.',
+        company: 'DesignFlow Studio',
+        education: 'Rhode Island School of Design',
+        location: 'Seattle, WA',
+        connectionCount: 3,
+        followerCount: 6,
+        profileViews: 620,
+        skills: ['Product Design', 'UI/UX', 'Design Systems', 'Figma', 'CSS Architecture'],
+        experiences: [{ title: 'Lead Product Designer', company: 'DesignFlow Studio', period: '2022 - Present', description: 'Guiding global product design strategy and tokenized UI design systems.' }],
+        educations: [{ school: 'RISD', degree: 'B.F.A. Graphic & Digital Design', period: '2018 - 2022' }]
+      },
+      {
+        id: 'u3',
+        username: 'marcus_v',
+        name: 'Marcus Vance',
+        headline: 'Cloud Solutions Architect & DevOps Lead | Kubernetes, AWS & Node.js Microservices',
+        avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=300&h=300&q=80',
+        bannerUrl: 'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=1200&q=80',
+        bio: 'Scaling cloud architectures, continuous integration pipelines, and secure backend microservices for enterprise loads.',
+        company: 'CloudScale Infrastructure',
+        education: 'Georgia Tech',
+        location: 'Austin, TX',
+        connectionCount: 3,
+        followerCount: 4,
+        profileViews: 380,
+        skills: ['AWS', 'Docker', 'Kubernetes', 'Express.js', 'CI/CD Pipelines'],
+        experiences: [{ title: 'Cloud Architect', company: 'CloudScale Infrastructure', period: '2021 - Present', description: 'Managing hybrid-cloud Kubernetes infrastructure.' }],
+        educations: [{ school: 'Georgia Tech', degree: 'M.S. Computer Science', period: '2019 - 2021' }]
+      },
+      {
+        id: 'u4',
+        username: 'priya_codes',
+        name: 'Priya Patel',
+        headline: 'Engineering Manager & Tech Speaker | Building Resilient Frontend Architecture',
+        avatar: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=300&h=300&q=80',
+        bannerUrl: 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&w=1200&q=80',
+        bio: 'Advocate for modern web engineering, developer ergonomics, and inclusive tech leadership.',
+        company: 'Vanguard Tech',
+        education: 'Carnegie Mellon University',
+        location: 'New York, NY',
+        connectionCount: 3,
+        followerCount: 5,
+        profileViews: 890,
+        skills: ['Engineering Management', 'React 19', 'TypeScript', 'Web Performance'],
+        experiences: [{ title: 'Engineering Manager', company: 'Vanguard Tech', period: '2023 - Present', description: 'Leading a distributed team of engineers.' }],
+        educations: [{ school: 'Carnegie Mellon University', degree: 'B.S. Computer Science', period: '2016 - 2020' }]
+      },
+      {
+        id: 'u5',
+        username: 'david_kim',
+        name: 'David Kim',
+        headline: 'Talent Acquisition & Technical Recruiter @ TechVentures | Hiring Full Stack Devs',
+        avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=300&h=300&q=80',
+        bannerUrl: 'https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=1200&q=80',
+        bio: 'Connecting exceptional engineers with top tier startups and growth-stage tech companies.',
+        company: 'TechVentures Recruiting',
+        education: 'UCLA',
+        location: 'Los Angeles, CA',
+        connectionCount: 2,
+        followerCount: 3,
+        profileViews: 1250,
+        skills: ['Technical Recruiting', 'Executive Search', 'Career Coaching'],
+        experiences: [{ title: 'Senior Technical Recruiter', company: 'TechVentures', period: '2020 - Present', description: 'Placed 150+ engineers in full-stack and cloud roles.' }],
+        educations: [{ school: 'UCLA', degree: 'B.A. Business Economics', period: '2015 - 2019' }]
+      }
+    ];
+
+    const SEED_POSTS = [
+      {
+        id: 'p1',
+        authorId: 'u1',
+        content: "Excited to share that I have just completed Task 2 for the CodeAlpha Full Stack Web Development Internship! 🚀🎉\n\nBuilt a full-stack social media platform with connected Express.js backend and React frontend:\n✅ User Profiles with Experience & Education\n✅ Dynamic Feed with Posts & Nested Comments\n✅ Full Like/Reaction and Follow/Connection System\n✅ Complete REST API connected on Port 3000\n✅ Clean, exportable source code zip ready for GitHub!\n\nCheck out the architecture below and feel free to connect! #fullstack #codealpha #react #express #webdev #internship",
+        mediaUrl: 'https://images.unsplash.com/photo-1555066931-4365d14bab8c?auto=format&fit=crop&w=1200&q=80',
+        tags: ['fullstack', 'codealpha', 'react', 'express', 'webdev', 'internship'],
+        totalReactions: 42,
+        userReaction: 'celebrate',
+        commentCount: 4,
+        repostCount: 2,
+        isBookmarked: false,
+        isReposted: false,
+        createdAt: new Date(Date.now() - 1000 * 60 * 25).toISOString(),
+        comments: [
+          { id: 'c1', authorId: 'u2', content: "Congratulations Alex! The UI looks super polished and the connected REST endpoints respond instantly. Outstanding work on the internship task! 👏", createdAt: new Date(Date.now() - 1000 * 60 * 18).toISOString() },
+          { id: 'c2', authorId: 'u5', content: "Impressive portfolio project! Demonstrating full-stack architecture with live Express routes is exactly what tech recruiters love to see.", createdAt: new Date(Date.now() - 1000 * 60 * 12).toISOString() }
+        ]
+      },
+      {
+        id: 'p2',
+        authorId: 'u2',
+        content: "3 design principles that will immediately elevate your frontend applications:\n\n1. Hierarchy Before Color: If your interface doesn't work in pure grayscale, adding vibrant buttons won't fix poor typography.\n2. Generous Breathing Room: Increase padding between sections by 20%. Space is a feature, not wasted canvas.\n3. Native Feedback: Micro-interactions on like, comment, and connect buttons make web apps feel instantaneous and alive.\n\nWhich UI detail matters most to you? 👇 #design #ux #frontend #typography #productdesign",
+        mediaUrl: 'https://images.unsplash.com/photo-1507238691740-187a5b1d37b8?auto=format&fit=crop&w=1200&q=80',
+        tags: ['design', 'ux', 'frontend', 'typography', 'productdesign'],
+        totalReactions: 31,
+        userReaction: null,
+        commentCount: 1,
+        repostCount: 1,
+        isBookmarked: true,
+        isReposted: false,
+        createdAt: new Date(Date.now() - 1000 * 60 * 95).toISOString(),
+        comments: [
+          { id: 'c3', authorId: 'u1', content: "Point #2 about generous spacing is golden. Usability improves drastically once elements have room to breathe.", createdAt: new Date(Date.now() - 1000 * 60 * 70).toISOString() }
+        ]
+      },
+      {
+        id: 'p3',
+        authorId: 'u3',
+        content: "Why we standardized on Express.js with TypeScript for high-velocity internal microservices:\n\n• Minimal overhead and predictable event loop behavior\n• Seamless middleware chaining for authentication and request parsing\n• Fast cold-start times compared to bulky monolithic frameworks\n• Effortless integration with modern client bundlers like Vite\n\nKeep your APIs focused, type-safe, and well-documented! ☁️⚡️ #devops #nodejs #express #typescript #cloud",
+        tags: ['devops', 'nodejs', 'express', 'typescript', 'cloud'],
+        totalReactions: 19,
+        userReaction: null,
+        commentCount: 0,
+        repostCount: 0,
+        isBookmarked: false,
+        isReposted: false,
+        createdAt: new Date(Date.now() - 1000 * 60 * 240).toISOString(),
+        comments: []
+      },
+      {
+        id: 'p4',
+        authorId: 'u5',
+        content: "📢 We are currently hiring Full Stack Developers (React + Node.js/Express) at TechVentures! Looking for passionate engineers who love building end-to-end web experiences, clean REST APIs, and responsive interfaces.\n\nDrop a comment or send a connection request if you or someone in your network is looking for new opportunities! #hiring #jobs #fullstack #techjobs #careers",
+        mediaUrl: 'https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=1200&q=80',
+        tags: ['hiring', 'jobs', 'fullstack', 'techjobs', 'careers'],
+        totalReactions: 28,
+        userReaction: null,
+        commentCount: 1,
+        repostCount: 1,
+        isBookmarked: false,
+        isReposted: false,
+        createdAt: new Date(Date.now() - 1000 * 60 * 420).toISOString(),
+        comments: [
+          { id: 'c4', authorId: 'u1', content: "Interested! Sent a connection request and updated my full-stack portfolio.", createdAt: new Date(Date.now() - 1000 * 60 * 380).toISOString() }
+        ]
+      }
+    ];
+
+    const JOBS_DATA = [
+      { id: 'job1', title: 'Full Stack Web Developer (Intern / Junior)', company: 'CodeAlpha Technologies', logo: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=100&h=100&q=80', location: 'Remote · Worldwide', salary: '$55,000 - $85,000 / yr', postedDate: '1 day ago', tags: ['React', 'Express.js', 'Node.js', 'REST API'], description: 'Work on real-world full-stack platforms using React, Express, and modern database backends.' },
+      { id: 'job2', title: 'Frontend React Engineer', company: 'TechFlow Global', logo: 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?auto=format&fit=crop&w=100&h=100&q=80', location: 'San Francisco, CA (Hybrid)', salary: '$120,000 - $155,000 / yr', postedDate: '3 days ago', tags: ['React 19', 'Tailwind CSS', 'TypeScript'], description: 'Build high-performance web dashboards with React and modern design systems.' },
+      { id: 'job3', title: 'Backend Node.js & Cloud Architect', company: 'Vanguard Systems', logo: 'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=100&h=100&q=80', location: 'Austin, TX (Remote)', salary: '$140,000 - $180,000 / yr', postedDate: '5 days ago', tags: ['Node.js', 'Express.js', 'Docker', 'AWS'], description: 'Design distributed microservices in Node.js and Express with automated container deployments.' }
+    ];
+
+    // State
+    let users = JSON.parse(localStorage.getItem('pulse_users') || 'null') || SEED_USERS;
+    let posts = JSON.parse(localStorage.getItem('pulse_posts') || 'null') || SEED_POSTS;
+    let currentUserId = 'u1';
+    let currentTab = 'home';
+    let activeFeedFilter = 'all';
+    let activeTagFilter = '';
+    let searchQuery = '';
+    let backendOnline = false;
+
+    function saveState() {
+      localStorage.setItem('pulse_users', JSON.stringify(users));
+      localStorage.setItem('pulse_posts', JSON.stringify(posts));
+    }
+
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      toast.innerHTML = '<span>✅</span><span>' + msg + '</span>';
+      toast.classList.remove('hidden');
+      toast.classList.add('flex');
+      setTimeout(() => {
+        toast.classList.add('hidden');
+        toast.classList.remove('flex');
+      }, 3000);
+    }
+
+    function formatTime(iso) {
+      const diff = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
+      if (diff < 60) return 'just now';
+      if (diff < 3600) return Math.floor(diff/60) + 'm ago';
+      if (diff < 86400) return Math.floor(diff/3600) + 'h ago';
+      return Math.floor(diff/86400) + 'd ago';
+    }
+
+    function getCurrentUser() {
+      return users.find(u => u.id === currentUserId) || users[0];
+    }
+
+    // CHECK CONNECTED BACKEND
+    async function checkBackend() {
+      try {
+        const res = await fetch('/api/health');
+        if (res.ok) {
+          const data = await res.json();
+          backendOnline = true;
+          document.getElementById('backendBadge').innerHTML = '<span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span><span>Express.js REST API Connected</span>';
+          // Sync live posts from Express backend
+          const postRes = await fetch('/api/posts');
+          if (postRes.ok) {
+            const livePosts = await postRes.json();
+            if (livePosts.length) posts = livePosts;
+          }
+          const userRes = await fetch('/api/users');
+          if (userRes.ok) {
+            const liveUsers = await userRes.json();
+            if (liveUsers.length) users = liveUsers;
+          }
+        }
+      } catch (e) {
+        backendOnline = false;
+        document.getElementById('backendBadge').innerHTML = '<span class="w-2 h-2 rounded-full bg-amber-400"></span><span>Standalone Browser Engine</span>';
+      }
+      renderAll();
+    }
+
+    // RENDER FUNCTIONS
+    function renderAll() {
+      renderNav();
+      renderSidebar();
+      renderPosts();
+      renderSuggested();
+      renderNetwork();
+      renderJobs();
+    }
+
+    function renderNav() {
+      const me = getCurrentUser();
+      document.getElementById('navAvatar').src = me.avatar;
+      document.getElementById('meMenuAvatar').src = me.avatar;
+      document.getElementById('meMenuName').innerText = me.name;
+      document.getElementById('meMenuHeadline').innerText = me.headline;
+
+      const switcher = document.getElementById('accountSwitcherList');
+      switcher.innerHTML = users.map(u => `
+        <button onclick="switchUser('${u.id}')" class="w-full flex items-center gap-2 p-1.5 rounded hover:bg-zinc-100 text-left ${u.id === currentUserId ? 'bg-sky-50 font-bold' : ''}">
+          <img src="${u.avatar}" class="w-6 h-6 rounded-full object-cover" />
+          <div class="truncate flex-1">
+            <div>${u.name}</div>
+            <div class="text-[10px] text-zinc-400 font-normal">@${u.username}</div>
+          </div>
+          ${u.id === currentUserId ? '<span class="text-[9px] bg-sky-200 text-sky-800 px-1 rounded">Active</span>' : ''}
+        </button>
+      `).join('');
+    }
+
+    function renderSidebar() {
+      const me = getCurrentUser();
+      document.getElementById('sidebarBanner').src = me.bannerUrl || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=600&q=80';
+      document.getElementById('sidebarAvatar').src = me.avatar;
+      document.getElementById('sidebarName').innerText = me.name;
+      document.getElementById('sidebarHeadline').innerText = me.headline;
+      document.getElementById('sidebarConnectionsCount').innerText = me.connectionCount || 4;
+      document.getElementById('sidebarViews').innerText = me.profileViews || 482;
+      document.getElementById('startPostAvatar').src = me.avatar;
+    }
+
+    function renderPosts() {
+      const container = document.getElementById('postsContainer');
+      const me = getCurrentUser();
+      
+      let filtered = posts.slice();
+      if (activeFeedFilter === 'following') {
+        filtered = filtered.filter(p => p.authorId !== currentUserId);
+      } else if (activeFeedFilter === 'bookmarks') {
+        filtered = filtered.filter(p => p.isBookmarked);
+      }
+      if (activeTagFilter) {
+        filtered = filtered.filter(p => p.tags && p.tags.includes(activeTagFilter));
+      }
+      if (searchQuery) {
+        const q = searchQuery.toLowerCase();
+        filtered = filtered.filter(p => p.content.toLowerCase().includes(q) || (p.tags && p.tags.some(t => t.toLowerCase().includes(q))));
+      }
+
+      document.getElementById('postCountBadge').innerText = '(' + filtered.length + ' posts)';
+
+      if (!filtered.length) {
+        container.innerHTML = `
+          <div class="bg-white rounded-xl border p-8 text-center text-zinc-400 text-xs">
+            No updates found in this view.
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = filtered.map(post => {
+        const author = users.find(u => u.id === post.authorId) || { name: 'Member', avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=100&h=100&q=80', headline: 'Software Engineer', username: 'user' };
+        const isSelf = post.authorId === currentUserId;
+
+        return `
+          <article class="bg-white rounded-xl border border-zinc-200 shadow-xs hover:border-zinc-300 transition-colors">
+            <!-- Header -->
+            <div class="p-3 sm:p-4 pb-2 flex justify-between items-start gap-3">
+              <div class="flex items-center gap-3 min-w-0">
+                <img src="${author.avatar}" onclick="openProfileModal('${author.id}')" class="w-12 h-12 rounded-full object-cover border cursor-pointer hover:brightness-95" />
+                <div class="min-w-0">
+                  <div class="flex items-center gap-1.5">
+                    <span onclick="openProfileModal('${author.id}')" class="font-bold text-sm text-zinc-900 hover:text-[#0a66c2] hover:underline cursor-pointer truncate">${author.name}</span>
+                    <span class="text-[11px] text-zinc-400">· 1st</span>
+                  </div>
+                  <div class="text-[11px] text-zinc-500 line-clamp-1 leading-snug">${author.headline || 'Full Stack Engineer'}</div>
+                  <div class="text-[10px] text-zinc-400 mt-0.5">${formatTime(post.createdAt)} · 🌐</div>
+                </div>
+              </div>
+              <div class="flex items-center gap-1">
+                ${!isSelf ? `
+                  <button onclick="toggleConnect('${author.id}')" class="px-2.5 py-1 text-xs font-semibold text-[#0a66c2] hover:bg-sky-50 rounded-full border border-transparent hover:border-sky-200">
+                    + Connect
+                  </button>
+                ` : `
+                  <button onclick="deletePost('${post.id}')" class="text-zinc-400 hover:text-rose-600 p-1 text-xs" title="Delete post">✕</button>
+                `}
+              </div>
+            </div>
+
+            <!-- Content -->
+            <div class="px-3 sm:px-4 py-1 text-sm text-zinc-800 leading-relaxed whitespace-pre-wrap">${formatPostContent(post.content)}</div>
+
+            <!-- Media -->
+            ${post.mediaUrl ? `
+              <div class="mt-2.5 bg-zinc-100 overflow-hidden max-h-96 border-y">
+                <img src="${post.mediaUrl}" class="w-full object-cover max-h-96" />
+              </div>
+            ` : ''}
+
+            <!-- Social stats -->
+            <div class="px-3 sm:px-4 py-2 flex justify-between text-xs text-zinc-500 border-b border-zinc-100">
+              <div class="flex items-center gap-1">
+                <span>👍 👏 💡</span>
+                <span class="cursor-pointer hover:text-[#0a66c2] hover:underline">${post.totalReactions || 0} reactions</span>
+              </div>
+              <div class="flex gap-2 text-[11px] text-zinc-400">
+                <span>${(post.comments || []).length} comments</span>
+                <span>·</span>
+                <span>${post.repostCount || 0} reposts</span>
+              </div>
+            </div>
+
+            <!-- Reaction Buttons -->
+            <div class="px-2 py-1 flex justify-between text-xs font-semibold text-zinc-600">
+              <button onclick="toggleReaction('${post.id}')" class="flex items-center gap-1 px-3 py-2 rounded-lg hover:bg-zinc-100 ${post.userReaction ? 'text-[#0a66c2]' : ''}">
+                <span>${post.userReaction === 'celebrate' ? '👏' : post.userReaction === 'love' ? '❤️' : '👍'}</span>
+                <span>${post.userReaction ? post.userReaction : 'Like'}</span>
+              </button>
+              <button onclick="toggleCommentsSection('${post.id}')" class="flex items-center gap-1 px-3 py-2 rounded-lg hover:bg-zinc-100">
+                <span>💬</span> <span>Comment</span>
+              </button>
+              <button onclick="toggleRepost('${post.id}')" class="flex items-center gap-1 px-3 py-2 rounded-lg hover:bg-zinc-100 ${post.isReposted ? 'text-emerald-600' : ''}">
+                <span>🔁</span> <span>Repost</span>
+              </button>
+              <button onclick="toggleBookmark('${post.id}')" class="flex items-center gap-1 px-3 py-2 rounded-lg hover:bg-zinc-100 ${post.isBookmarked ? 'text-amber-600' : ''}">
+                <span>🔖</span> <span>Save</span>
+              </button>
+            </div>
+
+            <!-- Inline Comments -->
+            <div id="comments-${post.id}" class="hidden p-3 bg-zinc-50/80 rounded-b-xl border-t border-zinc-100 space-y-2.5">
+              <div class="flex gap-2">
+                <img src="${me.avatar}" class="w-7 h-7 rounded-full object-cover shrink-0" />
+                <div class="flex-1 flex gap-2">
+                  <input type="text" id="commentInput-${post.id}" placeholder="Add a comment..." onkeydown="if(event.key==='Enter')submitComment('${post.id}')" class="flex-1 px-3 py-1.5 text-xs bg-white border rounded-full focus:outline-none focus:border-[#0a66c2]" />
+                  <button onclick="submitComment('${post.id}')" class="px-3 py-1 bg-[#0a66c2] text-white rounded-full text-xs font-bold">Reply</button>
+                </div>
+              </div>
+              <div class="space-y-2 pt-1">
+                ${(post.comments || []).map(c => {
+                  const cAuthor = users.find(u => u.id === c.authorId) || { name: 'Member', avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=100&h=100&q=80' };
+                  return `
+                    <div class="flex items-start gap-2 text-xs">
+                      <img src="${cAuthor.avatar}" class="w-6 h-6 rounded-full object-cover shrink-0 mt-0.5" />
+                      <div class="flex-1 bg-white p-2.5 rounded-xl border">
+                        <div class="font-bold text-zinc-900">${cAuthor.name}</div>
+                        <p class="text-zinc-700 mt-0.5">${c.content}</p>
+                      </div>
+                    </div>
+                  `;
+                }).join('')}
+              </div>
+            </div>
+          </article>
+        `;
+      }).join('');
+    }
+
+    function formatPostContent(text) {
+      return text.replace(/(#[a-zA-Z0-9_]+)/g, '<span onclick="filterByTag(\'$1\')" class="text-[#0a66c2] hover:underline cursor-pointer font-semibold">$1</span>');
+    }
+
+    function renderSuggested() {
+      const list = document.getElementById('suggestedUsersList');
+      const otherUsers = users.filter(u => u.id !== currentUserId).slice(0, 3);
+      list.innerHTML = otherUsers.map(u => `
+        <div class="flex items-start gap-2.5">
+          <img src="${u.avatar}" onclick="openProfileModal('${u.id}')" class="w-9 h-9 rounded-full object-cover shrink-0 cursor-pointer" />
+          <div class="min-w-0 flex-1">
+            <div onclick="openProfileModal('${u.id}')" class="font-bold text-xs text-zinc-900 hover:text-[#0a66c2] hover:underline cursor-pointer truncate">${u.name}</div>
+            <div class="text-[10px] text-zinc-500 line-clamp-1 leading-snug">${u.headline}</div>
+            <button onclick="toggleConnect('${u.id}')" class="mt-1 px-3 py-0.5 rounded-full border border-[#0a66c2] text-[#0a66c2] text-[11px] font-bold hover:bg-sky-50">
+              + Connect
+            </button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function renderNetwork() {
+      const grid = document.getElementById('networkGrid');
+      const otherUsers = users.filter(u => u.id !== currentUserId);
+      grid.innerHTML = otherUsers.map(u => `
+        <div class="bg-white border rounded-xl overflow-hidden text-center p-3 shadow-2xs hover:shadow-xs flex flex-col justify-between">
+          <div>
+            <div class="h-12 bg-gradient-to-r from-sky-500 to-indigo-600 -mx-3 -mt-3 mb-2"></div>
+            <img src="${u.avatar}" onclick="openProfileModal('${u.id}')" class="w-16 h-16 rounded-full border-2 border-white object-cover mx-auto -mt-10 cursor-pointer shadow-sm" />
+            <h4 onclick="openProfileModal('${u.id}')" class="font-bold text-xs text-zinc-900 hover:text-[#0a66c2] hover:underline cursor-pointer mt-1 truncate">${u.name}</h4>
+            <p class="text-[11px] text-zinc-500 line-clamp-2 px-1 min-h-[30px] mt-0.5">${u.headline}</p>
+          </div>
+          <button onclick="toggleConnect('${u.id}')" class="mt-3 w-full py-1 border border-[#0a66c2] text-[#0a66c2] rounded-full text-xs font-bold hover:bg-sky-50">
+            Connect
+          </button>
+        </div>
+      `).join('');
+    }
+
+    function renderJobs() {
+      const container = document.getElementById('jobsListContainer');
+      container.innerHTML = JOBS_DATA.map(j => `
+        <div class="p-4 sm:p-5 flex justify-between items-start gap-4 flex-wrap sm:flex-nowrap">
+          <div class="flex gap-3 min-w-0">
+            <img src="${j.logo}" class="w-12 h-12 rounded-lg object-cover border shrink-0" />
+            <div class="min-w-0">
+              <h3 class="font-bold text-sm sm:text-base text-zinc-900 leading-snug">${j.title}</h3>
+              <div class="text-xs font-semibold text-zinc-700">${j.company} · ${j.location}</div>
+              <div class="text-xs text-zinc-500 mt-1">${j.salary} · ${j.postedDate}</div>
+              <p class="text-xs text-zinc-600 mt-1.5 leading-relaxed">${j.description}</p>
+              <div class="flex gap-1.5 mt-2 flex-wrap">
+                ${j.tags.map(t => `<span class="px-2 py-0.5 bg-zinc-100 text-zinc-700 rounded text-[10px] font-semibold">${t}</span>`).join('')}
+              </div>
+            </div>
+          </div>
+          <button onclick="applyJob('${j.id}')" id="btn-job-${j.id}" class="px-5 py-2 bg-[#0a66c2] hover:bg-[#004182] text-white rounded-full text-xs font-bold shrink-0">
+            Easy Apply
+          </button>
+        </div>
+      `).join('');
+    }
+
+    function filterJobs(term) {
+      const q = term.toLowerCase();
+      const filtered = JOBS_DATA.filter(j => j.title.toLowerCase().includes(q) || j.company.toLowerCase().includes(q) || j.tags.some(t => t.toLowerCase().includes(q)));
+      const container = document.getElementById('jobsListContainer');
+      container.innerHTML = filtered.map(j => `
+        <div class="p-4 flex justify-between items-start gap-4">
+          <div class="min-w-0">
+            <h3 class="font-bold text-sm text-zinc-900">${j.title}</h3>
+            <div class="text-xs text-zinc-700">${j.company} · ${j.location}</div>
+          </div>
+          <button onclick="applyJob('${j.id}')" class="px-4 py-1.5 bg-[#0a66c2] text-white rounded-full text-xs font-bold">Easy Apply</button>
+        </div>
+      `).join('');
+    }
+
+    function applyJob(id) {
+      const btn = document.getElementById('btn-job-' + id);
+      if (btn) {
+        btn.innerText = 'Applied ✓';
+        btn.classList.remove('bg-[#0a66c2]');
+        btn.classList.add('bg-emerald-600');
+      }
+      showToast('Application submitted successfully!');
+      if (backendOnline) fetch('/api/jobs/' + id + '/apply', { method: 'POST' }).catch(()=>{});
+    }
+
+    // ACTIONS
+    function switchTab(tab) {
+      currentTab = tab;
+      ['home', 'network', 'jobs', 'notifications'].forEach(t => {
+        document.getElementById('view-' + t).classList.toggle('hidden', t !== tab);
+        document.getElementById('indicator-' + t).classList.toggle('hidden', t !== tab);
+        document.getElementById('nav-' + t).classList.toggle('font-semibold', t === tab);
+        document.getElementById('nav-' + t).classList.toggle('text-zinc-900', t === tab);
+      });
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function toggleMeMenu() {
+      document.getElementById('meMenu').classList.toggle('hidden');
+    }
+
+    function switchUser(id) {
+      currentUserId = id;
+      toggleMeMenu();
+      if (backendOnline) {
+        fetch('/api/session/switch', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ userId: id })
+        }).catch(()=>{});
+      }
+      showToast('Switched to ' + getCurrentUser().name);
+      renderAll();
+    }
+
+    function setFeedFilter(filter) {
+      activeFeedFilter = filter;
+      activeTagFilter = '';
+      ['all', 'following', 'bookmarks'].forEach(f => {
+        const btn = document.getElementById('btn-feed-' + f);
+        if (btn) {
+          btn.className = f === filter ? 'w-full text-left px-3 py-1.5 rounded-lg font-medium bg-sky-50 text-[#0a66c2]' : 'w-full text-left px-3 py-1.5 rounded-lg font-medium text-zinc-600 hover:bg-zinc-50';
+        }
+      });
+      renderPosts();
+    }
+
+    function filterByTag(tag) {
+      activeTagFilter = tag.replace(/^#/, '');
+      activeFeedFilter = 'all';
+      renderPosts();
+      showToast('Filtered by #' + activeTagFilter);
+    }
+
+    function handleSearch(val) {
+      searchQuery = val.trim();
+      renderPosts();
+    }
+
+    function openCreatePostModal() {
+      document.getElementById('createPostModal').classList.remove('hidden');
+    }
+    function closeCreatePostModal() {
+      document.getElementById('createPostModal').classList.add('hidden');
+    }
+    function appendTag(t) {
+      const area = document.getElementById('newPostContent');
+      area.value += ' #' + t;
+    }
+
+    async function submitNewPost() {
+      const content = document.getElementById('newPostContent').value.trim();
+      const mediaUrl = document.getElementById('newPostMedia').value.trim();
+      if (!content) return;
+
+      const tags = (content.match(/#[a-zA-Z0-9_]+/g) || []).map(t => t.substring(1));
+      const newPost = {
+        id: 'p_' + Date.now(),
+        authorId: currentUserId,
+        content,
+        mediaUrl: mediaUrl || undefined,
+        tags,
+        totalReactions: 1,
+        userReaction: 'like',
+        commentCount: 0,
+        repostCount: 0,
+        isBookmarked: false,
+        isReposted: false,
+        createdAt: new Date().toISOString(),
+        comments: []
+      };
+
+      posts.unshift(newPost);
+      saveState();
+      closeCreatePostModal();
+      document.getElementById('newPostContent').value = '';
+      document.getElementById('newPostMedia').value = '';
+      showToast('Post shared with your network!');
+      renderPosts();
+
+      if (backendOnline) {
+        fetch('/api/posts', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ content, mediaUrl, tags })
+        }).catch(()=>{});
+      }
+    }
+
+    function deletePost(id) {
+      posts = posts.filter(p => p.id !== id);
+      saveState();
+      showToast('Post deleted');
+      renderPosts();
+      if (backendOnline) fetch('/api/posts/' + id, { method: 'DELETE' }).catch(()=>{});
+    }
+
+    function toggleReaction(id) {
+      const p = posts.find(item => item.id === id);
+      if (!p) return;
+      if (p.userReaction) {
+        p.userReaction = null;
+        p.totalReactions = Math.max(0, (p.totalReactions || 1) - 1);
+      } else {
+        p.userReaction = 'like';
+        p.totalReactions = (p.totalReactions || 0) + 1;
+      }
+      saveState();
+      renderPosts();
+      if (backendOnline) fetch('/api/posts/' + id + '/react', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ type: 'like' }) }).catch(()=>{});
+    }
+
+    function toggleRepost(id) {
+      const p = posts.find(item => item.id === id);
+      if (!p) return;
+      p.isReposted = !p.isReposted;
+      p.repostCount = (p.repostCount || 0) + (p.isReposted ? 1 : -1);
+      saveState();
+      renderPosts();
+      showToast(p.isReposted ? 'Reposted to your network!' : 'Repost removed');
+      if (backendOnline) fetch('/api/posts/' + id + '/repost', { method: 'POST' }).catch(()=>{});
+    }
+
+    function toggleBookmark(id) {
+      const p = posts.find(item => item.id === id);
+      if (!p) return;
+      p.isBookmarked = !p.isBookmarked;
+      saveState();
+      renderPosts();
+      showToast(p.isBookmarked ? 'Saved to items' : 'Removed from saved items');
+      if (backendOnline) fetch('/api/posts/' + id + '/bookmark', { method: 'POST' }).catch(()=>{});
+    }
+
+    function toggleCommentsSection(id) {
+      const el = document.getElementById('comments-' + id);
+      if (el) el.classList.toggle('hidden');
+    }
+
+    function submitComment(id) {
+      const input = document.getElementById('commentInput-' + id);
+      if (!input || !input.value.trim()) return;
+      const p = posts.find(item => item.id === id);
+      if (!p) return;
+      p.comments = p.comments || [];
+      p.comments.push({
+        id: 'c_' + Date.now(),
+        authorId: currentUserId,
+        content: input.value.trim(),
+        createdAt: new Date().toISOString()
+      });
+      p.commentCount = p.comments.length;
+      saveState();
+      renderPosts();
+      toggleCommentsSection(id);
+      showToast('Comment posted!');
+      if (backendOnline) {
+        fetch('/api/posts/' + id + '/comments', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ content: input.value.trim() })
+        }).catch(()=>{});
+      }
+    }
+
+    function toggleConnect(targetId) {
+      const target = users.find(u => u.id === targetId);
+      if (!target) return;
+      showToast('Connected with ' + target.name);
+      renderAll();
+      if (backendOnline) fetch('/api/users/' + targetId + '/connect', { method: 'POST' }).catch(()=>{});
+    }
+
+    // Profile Modals
+    function openProfileModal(userId) {
+      const user = users.find(u => u.id === userId) || getCurrentUser();
+      document.getElementById('profModalTitle').innerText = user.name;
+      document.getElementById('profModalAvatar').src = user.avatar;
+      document.getElementById('profModalBanner').src = user.bannerUrl || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=800&q=80';
+      document.getElementById('profModalName').innerText = user.name;
+      document.getElementById('profModalHeadline').innerText = user.headline;
+      document.getElementById('profModalMeta').innerText = (user.location || 'Remote') + ' · ' + (user.connectionCount || 4) + ' connections';
+      document.getElementById('profModalBio').innerText = user.bio || 'Professional in tech.';
+
+      document.getElementById('profModalExp').innerHTML = (user.experiences || [{ title: 'Software Engineer', company: user.company || 'CodeAlpha', period: '2023 - Present' }]).map(e => `
+        <div>
+          <div class="font-bold text-zinc-900">${e.title}</div>
+          <div class="text-zinc-600">${e.company} · ${e.period}</div>
+          ${e.description ? `<p class="text-zinc-500 mt-1">${e.description}</p>` : ''}
+        </div>
+      `).join('');
+
+      document.getElementById('profModalEdu').innerHTML = (user.educations || [{ school: user.education || 'Computer Science', degree: 'Bachelor', period: '2020 - 2024' }]).map(edu => `
+        <div>
+          <div class="font-bold text-zinc-900">${edu.school}</div>
+          <div class="text-zinc-600">${edu.degree} · ${edu.period}</div>
+        </div>
+      `).join('');
+
+      document.getElementById('profModalSkills').innerHTML = (user.skills || ['JavaScript', 'React', 'Node.js', 'Express']).map(s => `
+        <span class="px-2.5 py-1 bg-zinc-100 rounded-full text-xs font-semibold text-zinc-700">${s}</span>
+      `).join('');
+
+      const actions = document.getElementById('profModalActions');
+      if (user.id === currentUserId) {
+        actions.innerHTML = `
+          <button onclick="closeProfileModal(); openEditProfileModal();" class="px-4 py-1.5 border border-zinc-300 rounded-full font-semibold text-xs hover:bg-zinc-50">
+            Edit Profile
+          </button>
+        `;
+      } else {
+        actions.innerHTML = `
+          <button onclick="toggleConnect('${user.id}')" class="px-5 py-1.5 bg-[#0a66c2] text-white rounded-full font-bold text-xs hover:bg-[#004182]">
+            Connect
+          </button>
+        `;
+      }
+
+      document.getElementById('profileModal').classList.remove('hidden');
+    }
+
+    function closeProfileModal() {
+      document.getElementById('profileModal').classList.add('hidden');
+    }
+
+    function openEditProfileModal() {
+      const me = getCurrentUser();
+      document.getElementById('editName').value = me.name;
+      document.getElementById('editHeadline').value = me.headline;
+      document.getElementById('editCompany').value = me.company || '';
+      document.getElementById('editLocation').value = me.location || '';
+      document.getElementById('editBio').value = me.bio || '';
+      document.getElementById('editProfileModal').classList.remove('hidden');
+    }
+
+    function closeEditProfileModal() {
+      document.getElementById('editProfileModal').classList.add('hidden');
+    }
+
+    function saveProfileChanges() {
+      const me = getCurrentUser();
+      me.name = document.getElementById('editName').value.trim() || me.name;
+      me.headline = document.getElementById('editHeadline').value.trim() || me.headline;
+      me.company = document.getElementById('editCompany').value.trim() || me.company;
+      me.location = document.getElementById('editLocation').value.trim() || me.location;
+      me.bio = document.getElementById('editBio').value.trim() || me.bio;
+      saveState();
+      closeEditProfileModal();
+      showToast('Profile updated!');
+      renderAll();
+      if (backendOnline) {
+        fetch('/api/users/' + currentUserId, {
+          method: 'PUT',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ name: me.name, headline: me.headline, company: me.company, location: me.location, bio: me.bio })
+        }).catch(()=>{});
+      }
+    }
+
+    function openCreateUserModal() {
+      document.getElementById('createUserModal').classList.remove('hidden');
+    }
+    function closeCreateUserModal() {
+      document.getElementById('createUserModal').classList.add('hidden');
+    }
+
+    function submitNewUser() {
+      const name = document.getElementById('newUserName').value.trim();
+      const username = document.getElementById('newUserHandle').value.trim().toLowerCase().replace(/^@/, '');
+      const headline = document.getElementById('newUserHeadline').value.trim();
+      if (!name || !username) return;
+
+      const newUser = {
+        id: 'u_' + Date.now(),
+        username,
+        name,
+        headline: headline || 'Software Engineer',
+        avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=300&h=300&q=80',
+        bio: 'New member connecting on LinkedIn clone.',
+        company: 'CodeAlpha',
+        education: 'Computer Science',
+        location: 'Remote',
+        connectionCount: 0,
+        followerCount: 0,
+        profileViews: 10,
+        skills: ['Full Stack', 'JavaScript'],
+        experiences: [],
+        educations: []
+      };
+
+      users.push(newUser);
+      currentUserId = newUser.id;
+      saveState();
+      closeCreateUserModal();
+      showToast('Account created for ' + name);
+      renderAll();
+
+      if (backendOnline) {
+        fetch('/api/users', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify(newUser)
+        }).catch(()=>{});
+      }
+    }
+
+    function openApiModal() {
+      document.getElementById('apiModal').classList.remove('hidden');
+    }
+    function closeApiModal() {
+      document.getElementById('apiModal').classList.add('hidden');
+    }
+
+    function resetDemoData() {
+      localStorage.removeItem('pulse_users');
+      localStorage.removeItem('pulse_posts');
+      users = JSON.parse(JSON.stringify(SEED_USERS));
+      posts = JSON.parse(JSON.stringify(SEED_POSTS));
+      currentUserId = 'u1';
+      showToast('Reset to demo seed data');
+      renderAll();
+      if (backendOnline) fetch('/api/reset-demo', { method: 'POST' }).catch(()=>{});
+    }
+
+    function downloadProjectZip() {
+      showToast('Starting ZIP download...');
+      window.location.href = '/api/download-zip';
+    }
+
+    // Initialize on load
+    window.addEventListener('DOMContentLoaded', () => {
+      checkBackend();
+    });
+  </script>
+
+</body>
+</html>
